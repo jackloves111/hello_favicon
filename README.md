@@ -15,7 +15,10 @@
 1. 拉取代码
 
 ```bash
-https://github.com/luler/hello_favicon.git
+#拉取代码
+git clone https://github.com/luler/hello_favicon.git
+#进入目录
+cd hello_favicon
 ```
 
 2. 启动运行
