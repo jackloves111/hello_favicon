@@ -10,6 +10,10 @@
     <title>**Favicon 获取工具 | 网站图标抓取与转换（支持 ICO/PNG/JPEG/SVG/Base64）**</title>
     <script src="/static/js/tailwindcss-3.14.16.js"></script>
     <style>
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
         #websiteDescription, .website-info-item .content {
             cursor: default;
             user-select: none;
@@ -235,6 +239,11 @@
             return;
         }
 
+        // 获取按钮并禁用
+        const submitButton = urlForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = '处理中...'; // 可选：提供用户反馈
+
         loadingState.classList.remove('hidden');
         try {
             const response = await fetch(API_URL, {
@@ -254,6 +263,9 @@
             showError(error.message || "获取网站元数据失败");
         } finally {
             loadingState.classList.add('hidden');
+            // 启用按钮并恢复文本
+            submitButton.disabled = false;
+            submitButton.textContent = '获取';
         }
     });
 
