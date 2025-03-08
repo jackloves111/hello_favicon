@@ -276,6 +276,34 @@ func removeDuplicates(urls []string) []string {
 
 // 获取并解码图像
 func fetchAndDecodeImage(imageURL string) (image.Image, bool) {
+	// 判断是否是 Base64 Data URL
+	if strings.HasPrefix(imageURL, "data:image/") {
+		// 按逗号分割 Data URL，提取 Base64 部分
+		parts := strings.SplitN(imageURL, ",", 2)
+		if len(parts) != 2 {
+			fmt.Println("无效的 Data URL 格式")
+			return nil, false
+		}
+
+		// 获取 Base64 数据
+		base64Data := parts[1]
+
+		// 解码 Base64
+		imgData, err := base64.StdEncoding.DecodeString(base64Data)
+		if err != nil {
+			fmt.Println("Base64 解码失败:", err)
+			return nil, false
+		}
+
+		// 解码为图像
+		img, _, err := image.Decode(bytes.NewReader(imgData))
+		if err != nil {
+			fmt.Println("图像解码失败:", err)
+			return nil, false
+		}
+		return img, true
+	}
+
 	// 创建请求
 	req, err := http.NewRequest("GET", imageURL, nil)
 	if err != nil {
