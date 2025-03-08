@@ -78,7 +78,7 @@ func main() {
 	// Favicon API
 	r.POST("/api/favicon", getFavicon)
 
-	r.Run(":8080")
+	r.Run(":3000")
 }
 
 func getFavicon(c *gin.Context) {

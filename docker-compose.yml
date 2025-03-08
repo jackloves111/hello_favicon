@@ -3,8 +3,8 @@ services:
   hello_favicon:
     image: ghcr.io/luler/hello_favicon
     restart: always
-    environment:
-      - http_proxy=http://127.0.0.1:10808
-      - https_proxy=http://127.0.0.1:10808
+    #environment:
+    # - http_proxy=http://127.0.0.1:10808
+    # - https_proxy=http://127.0.0.1:10808
     ports:
       - 2025:3000
