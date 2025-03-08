@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="description"
+          content="网站Favicon获取工具 - 高效抓取与转换网站图标，支持自动识别favicon.ico、PNG、SVG等多种格式。快速获取网站标题、描述及兼容性强的favicon图标，适配所有移动设备和浏览器。">
+    <meta name="keywords" content="Favicon获取,Favicon转换,网站图标抓取,SEO工具,移动端适配">
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon">
+    <title>网站Favicon获取与转换工具</title>
+    <script src="/static/js/tailwindcss-3.14.16.js"></script>
+    <style>
+        #websiteDescription, .website-info-item .content {
+            cursor: default;
+            user-select: none;
+            transition: 0.2s;
+        }
+
+        #websiteDescription:hover, .website-info-item .content:hover {
+            text-decoration: underline dashed;
+            text-underline-offset: 4px;
+            cursor: pointer;
+        }
+
+        .prefix {
+            font-weight: bold;
+            margin-right: 5px;
+            width: 100px; /* 固定标签宽度 */
+            display: inline-block;
+        }
+
+        .website-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .website-info-item {
+            display: flex;
+            align-items: flex-start;
+            font-size: 16px;
+            color: #333;
+            margin: 0;
+        }
+
+        .website-info-item .content {
+            flex: 1;
+            word-break: break-all; /* 强制换行 */
+        }
+
+        .view-btn:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s;
+        }
+
+        .favicon-container {
+            display: flex;
+            justify-content: flex-start; /* 左对齐 */
+        }
+
+        /* 暗黑模式适配 */
+        .dark .website-info-item {
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors">
+<script>
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+        document.documentElement.classList.toggle('dark', event.matches);
+    });
+</script>
+
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-2xl font-bold text-center mb-8 text-blue-600 dark:text-blue-400">网站Favicon获取与转换工具</h1>
+
+    <!-- 输入表单 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <form id="urlForm" class="space-y-4">
+            <div>
+                <label for="urlInput" class="block text-sm font-medium mb-1">输入网站URL</label>
+                <div class="flex flex-col sm:flex-row">
+                    <input
+                            type="url"
+                            id="urlInput"
+                            placeholder="https://example.com"
+                            class="flex-1 px-4 py-3 border rounded-t-lg sm:rounded-l-lg sm:rounded-t-none text-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autocomplete="url"
+                            required
+                            aria-label="输入网站URL以获取Favicon"
+                    >
+                    <button
+                            type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-b-lg sm:rounded-r-lg sm:rounded-b-none text-lg transition-colors"
+                            aria-label="获取网站信息"
+                    >
+                        获取
+                    </button>
+                </div>
+                <p id="errorMessage" class="text-red-500 text-sm mt-1 hidden">请输入有效的URL (例如:
+                    https://example.com)</p>
+            </div>
+        </form>
+    </div>
+
+    <!-- 加载状态 -->
+    <div id="loadingState" class="hidden text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="mt-4 text-lg">正在获取网站图标和描述...</p>
+    </div>
+
+    <!-- 结果容器 -->
+    <div id="resultsContainer" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4 pb-2 border-b dark:border-gray-700">网站信息</h2>
+        <div class="space-y-6">
+            <!-- Favicon -->
+            <div class="favicon-container">
+                <div id="faviconContainer"
+                     class="w-16 h-16 flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <img id="faviconImage" class="max-w-full max-h-full object-contain" src="" alt="网站Favicon"
+                         loading="lazy">
+                </div>
+            </div>
+            <!-- 网站信息 -->
+            <div class="website-info">
+                <div class="website-info-item website-url">
+                    <span class="prefix">网站地址：</span><span class="content" aria-label="网站地址"></span>
+                </div>
+                <div class="website-info-item website-title">
+                    <span class="prefix">网站标题：</span><span class="content" aria-label="网站标题"></span>
+                </div>
+                <div class="website-info-item website-description">
+                    <span class="prefix">网站描述：</span><span class="content" aria-label="网站描述"
+                                                               id="websiteDescription"></span>
+                </div>
+            </div>
+            <!-- 多尺寸Favicon区域 -->
+            <div>
+                <h3 class="font-semibold mb-2">不同尺寸的Favicon (PNG格式)：</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    <div id="favicon16" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="flex justify-center items-center h-16">
+                            <img class="favicon-size" width="16" height="16" alt="16x16 favicon" loading="lazy">
+                        </div>
+                        <p class="mt-2 text-sm">16×16</p>
+                        <a href="#"
+                           class="view-btn mt-1 inline-block text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                           data-size="16" download aria-label="下载16x16 Favicon">下载</a>
+                    </div>
+                    <div id="favicon32" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="flex justify-center items-center h-16">
+                            <img class="favicon-size" width="32" height="32" alt="32x32 favicon" loading="lazy">
+                        </div>
+                        <p class="mt-2 text-sm">32×32</p>
+                        <a href="#"
+                           class="view-btn mt-1 inline-block text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                           data-size="32" download aria-label="下载32x32 Favicon">下载</a>
+                    </div>
+                    <div id="favicon64" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="flex justify-center items-center h-16">
+                            <img class="favicon-size" width="64" height="64" alt="64x64 favicon" loading="lazy">
+                        </div>
+                        <p class="mt-2 text-sm">64×64</p>
+                        <a href="#"
+                           class="view-btn mt-1 inline-block text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                           data-size="64" download aria-label="下载64x64 Favicon">下载</a>
+                    </div>
+                    <div id="favicon128" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="flex justify-center items-center h-16 overflow-hidden">
+                            <img class="favicon-size max-h-full max-w-full object-contain" width="64" height="64"
+                                 style="max-width: 64px;" alt="128x128 favicon" loading="lazy">
+                        </div>
+                        <p class="mt-2 text-sm">128×128</p>
+                        <a href="#"
+                           class="view-btn mt-1 inline-block text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                           data-size="128" download aria-label="下载128x128 Favicon">下载</a>
+                    </div>
+                    <div id="favicon256" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="flex justify-center items-center h-16 overflow-hidden">
+                            <img class="favicon-size max-h-full max-w-full object-contain" width="64" height="64"
+                                 style="max-width: 64px;" alt="256x256 favicon" loading="lazy">
+                        </div>
+                        <p class="mt-2 text-sm">256×256</p>
+                        <a href="#"
+                           class="view-btn mt-1 inline-block text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+                           data-size="256" download aria-label="下载256x256 Favicon">下载</a>
+                    </div>
+                </div>
+                <div id="viewStatus" class="mt-2 text-sm text-green-600 dark:text-green-400 hidden">正在下载图标...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="errorContainer"
+         class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-red-500" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-lg font-medium text-red-800 dark:text-red-200 mt-3">获取失败</h3>
+        <p id="errorContainerMessage" class="mt-2 text-red-700 dark:text-red-300"></p>
+    </div>
+</div>
+
+<script>
+    const API_URL = '/api/favicon';
+    const urlForm = document.getElementById('urlForm');
+    const urlInput = document.getElementById('urlInput');
+    const errorMessage = document.getElementById('errorMessage');
+    const loadingState = document.getElementById('loadingState');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const errorContainer = document.getElementById('errorContainer');
+    const errorContainerMessage = document.getElementById('errorContainerMessage');
+    const faviconImage = document.getElementById('faviconImage');
+    const websiteUrlContent = document.querySelector('.website-url .content');
+    const websiteTitleContent = document.querySelector('.website-title .content');
+    const websiteDescription = document.getElementById('websiteDescription');
+
+    urlForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMessage.classList.add('hidden');
+        errorContainer.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+
+        const url = urlInput.value.trim();
+        if (!isValidUrl(url)) {
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        loadingState.classList.remove('hidden');
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url}),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '获取网站数据失败');
+            }
+
+            const data = await response.json();
+            displayResults(data);
+        } catch (error) {
+            showError(error.message || "获取网站元数据失败");
+        } finally {
+            loadingState.classList.add('hidden');
+        }
+    });
+
+    function isValidUrl(string) {
+        try {
+            let urlToCheck = string;
+            if (!string.startsWith('http://') && !string.startsWith('https://')) {
+                urlToCheck = 'https://' + string;
+            }
+            const url = new URL(urlToCheck);
+            return url.hostname.includes('.');
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function showError(message) {
+        errorContainer.classList.remove('hidden');
+        errorContainerMessage.textContent = message;
+        resultsContainer.classList.add('hidden');
+    }
+
+    function displayResults(data) {
+        websiteUrlContent.textContent = data.url;
+        websiteTitleContent.textContent = data.title || new URL(data.url).hostname;
+        websiteDescription.textContent = data.description || '没有找到网站描述';
+        faviconImage.src = data.favicons['128'] || data.faviconUrl;
+        faviconImage.alt = `${data.title} favicon`;
+
+        const sizes = ['16', '32', '64', '128', '256'];
+        sizes.forEach(size => {
+            if (data.favicons[size]) {
+                const img = document.querySelector(`#favicon${size} img`);
+                img.src = data.favicons[size];
+                img.alt = `${size}x${size} favicon`;
+                const btn = document.querySelector(`#favicon${size} .view-btn`);
+                btn.href = data.favicons[size];
+                btn.download = `favicon-${size}.png`;
+                btn.addEventListener('click', () => {
+                    const viewStatus = document.getElementById('viewStatus');
+                    viewStatus.textContent = `正在下载 ${size}x${size} 图标...`;
+                    viewStatus.classList.remove('hidden');
+                    setTimeout(() => viewStatus.classList.add('hidden'), 3000);
+                });
+            }
+        });
+
+        [websiteUrlContent, websiteTitleContent, websiteDescription].forEach((element) => {
+            element.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                const text = element.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    element.style.backgroundColor = '#e0f2ff';
+                    setTimeout(() => element.style.backgroundColor = '', 1500);
+                }).catch((err) => console.error('复制失败:', err));
+            });
+        });
+
+        resultsContainer.classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
