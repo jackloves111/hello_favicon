@@ -182,7 +182,7 @@ func getFavicon(c *gin.Context) {
 	favicons := make(map[string]string)
 
 	for _, size := range sizes {
-		resized := resize.Resize(size, size, img, resize.Lanczos3)
+		resized := resize.Resize(size, size, img, resize.Bilinear)
 
 		var buf bytes.Buffer
 		if err := png.Encode(&buf, resized); err != nil {
