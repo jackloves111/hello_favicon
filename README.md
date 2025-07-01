@@ -63,3 +63,37 @@ docker-compose up -d
 ## 截图展示
 
 ![](example.jpg)
+
+## 新增功能
+
+接口地址： GET /api
+
+支持的查询参数：
+
+- url - 目标网站URL
+- 空参数名（如 ?=https://www.baidu.com ）
+- u - URL的简写形式
+## 使用示例
+你现在可以在浏览器中直接访问：
+
+```
+http://localhost:3000/api?=https://www.baidu.com
+http://localhost:3000/api?url=https://www.baidu.com
+http://localhost:3000/api?u=https://www.baidu.com
+```
+## 返回的JSON格式
+```
+{
+  "title": "百度一下，你就知道",
+  "description": "全球领先的中文搜索引擎、致力于让网民更便捷地获取信息，找到
+  所求。",
+  "url": "https://www.baidu.com",
+  "faviconUrl": "https://www.baidu.com/favicon.ico"
+}
+```
+## 实现的功能特性
+1. 多种参数支持 - 支持 url 、空参数名、 u 三种查询参数格式
+2. 自动协议补全 - 自动为没有协议的URL添加 https://
+3. 智能Favicon获取 - 自动查找网站的favicon，如果找不到则提供默认图标
+4. 错误处理 - 完善的错误处理和状态码返回
+5. CORS支持 - 支持跨域请求
