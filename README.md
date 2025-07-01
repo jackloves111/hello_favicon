@@ -77,11 +77,9 @@ docker-compose up -d
 你现在可以在浏览器中直接访问：
 
 ```
-http://localhost:3000/api?=https://www.baidu.com
 http://localhost:3000/api?url=https://www.baidu.com
-http://localhost:3000/api?u=https://www.baidu.com
 ```
-## 返回的JSON格式
+### 返回的JSON格式
 ```
 {
   "title": "百度一下，你就知道",
@@ -91,9 +89,12 @@ http://localhost:3000/api?u=https://www.baidu.com
   "faviconUrl": "https://www.baidu.com/favicon.ico"
 }
 ```
-## 实现的功能特性
-1. 多种参数支持 - 支持 url 、空参数名、 u 三种查询参数格式
+### 实现的功能特性
+1. CORS支持 - 支持跨域请求
 2. 自动协议补全 - 自动为没有协议的URL添加 https://
 3. 智能Favicon获取 - 自动查找网站的favicon，如果找不到则提供默认图标
 4. 错误处理 - 完善的错误处理和状态码返回
-5. CORS支持 - 支持跨域请求
+### 重试机制应用
+不仅在主要的网站信息获取中使用重试，还在图像获取函数 fetchAndDecodeImage 中也应用了重试机制：
+- 图像获取重试 : 最多重试2次，间隔1秒
+- 网站信息获取重试 : 最多重试3次，间隔3秒

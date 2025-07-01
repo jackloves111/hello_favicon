@@ -284,6 +284,49 @@ func removeDuplicates(urls []string) []string {
 	return result
 }
 
+// fetchWithRetry 带重试机制的HTTP请求函数
+func fetchWithRetry(targetURL string, maxRetries int, retryDelay time.Duration) (*http.Response, error) {
+	var lastErr error
+	
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// 创建带有User-Agent的请求
+		req, err := http.NewRequest("GET", targetURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %v", err)
+		}
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+		
+		// 发送请求
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			if attempt < maxRetries {
+				fmt.Printf("请求失败 (尝试 %d/%d): %v，%v秒后重试...\n", attempt+1, maxRetries+1, err, retryDelay.Seconds())
+				time.Sleep(retryDelay)
+				continue
+			}
+			return nil, fmt.Errorf("所有重试都失败了: %v", err)
+		}
+		
+		// 检查状态码 - 对所有非200状态码进行重试
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("服务器返回状态码: %d", resp.StatusCode)
+			if attempt < maxRetries {
+				fmt.Printf("收到 %d 状态码 (尝试 %d/%d)，%v秒后重试...\n", resp.StatusCode, attempt+1, maxRetries+1, retryDelay.Seconds())
+				time.Sleep(retryDelay)
+				continue
+			}
+			return nil, lastErr
+		}
+		
+		// 请求成功
+		return resp, nil
+	}
+	
+	return nil, lastErr
+}
+
 // 获取并解码图像
 func fetchAndDecodeImage(imageURL string) (image.Image, bool) {
 	// 判断是否是 Base64 Data URL
@@ -314,27 +357,13 @@ func fetchAndDecodeImage(imageURL string) (image.Image, bool) {
 		return img, true
 	}
 
-	// 创建请求
-	req, err := http.NewRequest("GET", imageURL, nil)
-	if err != nil {
-		fmt.Printf("创建请求失败: %v\n", err)
-		return nil, false
-	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-
-	// 发送请求
-	resp, err := httpClient.Do(req)
+	// 使用重试机制发送请求
+	resp, err := fetchWithRetry(imageURL, 2, 1*time.Second)
 	if err != nil {
 		fmt.Printf("获取图像失败 %s: %v\n", imageURL, err)
 		return nil, false
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("图像请求返回非200状态码: %d\n", resp.StatusCode)
-		return nil, false
-	}
 
 	// 读取响应体
 	imgData, err := io.ReadAll(resp.Body)
@@ -486,14 +515,8 @@ func drawInitial(img *image.RGBA, initial string, centerX, centerY int, color co
 
 // getWebsiteInfoByQuery 处理GET请求，通过查询参数获取网站信息
 func getWebsiteInfoByQuery(c *gin.Context) {
-	// 从查询参数获取URL，支持多种参数名
-	targetURL := c.Query("url")
-	if targetURL == "" {
-		targetURL = c.Query("")
-	}
-	if targetURL == "" {
-		targetURL = c.Query("u")
-	}
+	// 从查询参数获取URL，只支持空参数名
+	targetURL := c.Query("")
 	
 	if targetURL == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "URL parameter is required"})
